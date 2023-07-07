@@ -1,0 +1,14 @@
+{
+  "G30" : {
+    "des":"open visual studio code, vs code",
+    "argument" : "None or file path"
+  },
+  "G31" : {
+    "des":"open mozilla firefox, web browser",
+    "argument" : "None or url"
+  },
+  "G32" : {
+    "des":"open discord ",
+    "argument" : "None"
+  }
+}

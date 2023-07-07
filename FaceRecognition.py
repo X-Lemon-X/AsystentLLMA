@@ -14,8 +14,9 @@ MIN_FACE_ID = 10000000000
 VERIFIED_FACE_DIR_NAME = "verified"
 UNVERIFIED_FACE_DIR_NAME = "unverified"
 FACES_DIR_NAME = "faces"
-TEST_CAPTURE = True
+TEST_CAPTURE = False
 RESIZE_FACE_BOX_CONSTANT = 0.1  #resize by 10% to avoid cutting face
+
 
 class FacesLib:
   def __init__(self, video_frame_resize = 0.25, camera=cv2.VideoCapture(0),faces_path:str = FACES_DIR_NAME) -> None:
@@ -121,8 +122,11 @@ class FacesLib:
     return id , len(self.known_face_names)-1
 
   def VerifyFace(self,face_id:int):
-    index = self.known_face_names.index(face_id)
-    self.verified_face[index] = True
+    try: 
+      index = self.known_face_names.index(face_id)
+      self.verified_face[index] = True
+    except:
+      raise ValueError("Face id not found")
 
   def SaveFaces(self):
     for i in range(len(self.known_face_encodings)):
@@ -216,7 +220,7 @@ class FacesLib:
         frameCopy = cv2.cvtColor(frameCopy, cv2.COLOR_BGR2RGB)
         id , matcheIndex = self.AddFace(face_encoding,frameCopy,self.face_locations[index])
         matcheIndex, distance = self.__CompareFaces(face_encoding)
-        print("New face detected:",id)
+        #print("New face detected:",id)
       top, right, bottom, left = self.face_locations[index]
       face_to_image_ratio = (bottom-top)*(right-left)/(rgb_small_frame.shape[0]*rgb_small_frame.shape[1])
       
@@ -310,3 +314,4 @@ class FacesLib:
   def SetFilterDeltaTime(self, time:float):
     with self.CameraThreadLock:
       self.filter_delta_time = time
+

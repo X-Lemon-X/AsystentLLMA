@@ -1,3 +1,12 @@
+
+# Required linux packages Install these before runing installing requirements.txt
+```bash
+sudo apt install espeak
+sudo apt-get install python3-pyaudio
+sudo apt update 
+sudo apt install ffmpeg
+sudo apt-get install libespeak-ng1
+```
 # Python create virtual env
 
 ```bash
@@ -19,7 +28,7 @@ sudo apt-get install portaudio19-dev
 python3 -m pip install -r requirements.txt
 ```
 
-#leave virtual env
+# leave virtual env
 ```bash
 deactivate
 ```

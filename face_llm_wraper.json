@@ -1,0 +1,10 @@
+{
+  "G20" : {
+    "des":"show list of id of people you see, view, the camera sees",
+    "argument" : "None"
+  },
+  "G21" : {
+    "des":"add new face to a list of known faces ",
+    "argument" : "face name to be added for example: G21 face_name"
+  }
+}
