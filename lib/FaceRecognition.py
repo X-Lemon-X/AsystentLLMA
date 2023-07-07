@@ -6,17 +6,19 @@ import math
 import copy
 from pathlib import Path
 from threading import Thread, Event , Lock
+import time as timer
 
 MAX_FACE_ID = 99999999999
 MIN_FACE_ID = 10000000000
 
 VERIFIED_FACE_DIR_NAME = "verified"
 UNVERIFIED_FACE_DIR_NAME = "unverified"
+FACES_DIR_NAME = "faces"
 TEST_CAPTURE = True
 RESIZE_FACE_BOX_CONSTANT = 0.1  #resize by 10% to avoid cutting face
 
 class FacesLib:
-  def __init__(self, video_frame_resize = 0.25, camera=cv2.VideoCapture(0),faces_path:str = 'faces') -> None:
+  def __init__(self, video_frame_resize = 0.25, camera=cv2.VideoCapture(0),faces_path:str = FACES_DIR_NAME) -> None:
     if faces_path is None or faces_path == "":
       raise ValueError("faces_path must be not empty")
     Path.mkdir(Path(faces_path),exist_ok=True)
@@ -36,6 +38,13 @@ class FacesLib:
     self.curent_names =[] 
     self.curent_confidences = []
     self.curent_face_to_image_ratio = []
+
+    #holde face id's for filering
+    self.filer_faces_ids = {}
+    self.filter_delta_time = 1.0 #time in seconds to filter faces that are not in the frame but where in previous frames to avoid flickering of the output of curently available faces
+    self.fec = {}
+    self.fec_copy = {}
+
 
     self.known_face_encodings = []
     self.known_face_names = []
@@ -134,6 +143,35 @@ class FacesLib:
     self.known_face_images.pop(index)
     self.verified_face.pop(index)
 
+  def __FilterFaces(self, faces_names:list = None, faces_confidences:list = None, faces_to_image_ratio:list = None, fec:dict = None):
+    """Filetr faces that are not in the frame but where in previous frames to avoid flickering of the output of curently available faces"""
+    if faces_names is None:
+      pass
+      
+    if fec is None:
+      fec = {}
+
+    keysToRemove = []
+    curentTime = timer.time()
+    for key, time in self.filer_faces_ids.items():
+      if curentTime - time > self.filter_delta_time:
+        keysToRemove.append(key)
+    
+    for key in keysToRemove:
+      self.filer_faces_ids.pop(key)
+      self.fec.pop(key)
+
+    if len(fec) != 0:
+      curentTime = timer.time()
+      for key, value in fec.items():
+        self.filer_faces_ids[key] = curentTime
+        self.fec[key] = fec[key]
+
+    # for higher performance on multithreading rather than stoping entire capture proces to get data
+    # just copy results to another variables that are locked 
+    with self.CameraThreadLock:
+      self.fec_copy = copy.deepcopy(self.fec)
+
   def __CompareFaces(self,face_encoding:list):
     """ return True if face is recognized
         return False if face is not recognized is not on a list """
@@ -164,10 +202,13 @@ class FacesLib:
     self.face_locations = face_recognition.face_locations(rgb_small_frame)
     self.face_encodings = face_recognition.face_encodings(rgb_small_frame, self.face_locations)
 
-    self.face_names = []
-    self.face_to_image_ratio = []
-    self.face_confidences = []
-    verified = []
+    faces_in_a_frame = {}    
+    if TEST_CAPTURE:
+      self.face_names = []
+      self.face_to_image_ratio = []
+      self.face_confidences = []
+      verified = []
+    
     index = 0
     for face_encoding in self.face_encodings:
       matcheIndex, distance = self.__CompareFaces(face_encoding)
@@ -178,20 +219,21 @@ class FacesLib:
         print("New face detected:",id)
       top, right, bottom, left = self.face_locations[index]
       face_to_image_ratio = (bottom-top)*(right-left)/(rgb_small_frame.shape[0]*rgb_small_frame.shape[1])
-      self.face_to_image_ratio.append(face_to_image_ratio)
-      self.face_confidences.append(self.__face_confidence(distance))
-      self.face_names.append(self.known_face_names[matcheIndex])
-      verified.append(self.verified_face[matcheIndex])
-      #print("face:",self.known_face_names[matcheIndex])
+      
+      key = self.known_face_names[matcheIndex]
+      faces_in_a_frame[key] = [self.__face_confidence(distance),face_to_image_ratio,self.verified_face[matcheIndex]]
+      
+      if TEST_CAPTURE:
+        self.face_to_image_ratio.append(face_to_image_ratio)
+        self.face_confidences.append(self.__face_confidence(distance))
+        self.face_names.append(self.known_face_names[matcheIndex])
+        verified.append(self.verified_face[matcheIndex])
       index = index+1
 
-    # for higher performance on multithreading rather than stoping entire capture proces to get data
-    # just copy results to another variables that are locked 
-    with self.CameraThreadLock:
-      self.curent_names = copy.deepcopy(self.face_names) 
-      self.curent_confidences = copy.deepcopy(self.face_confidences)
-      self.curent_face_to_image_ratio = copy.deepcopy(self.face_to_image_ratio)
 
+    
+    self.__FilterFaces(self.face_names,self.face_confidences,self.face_to_image_ratio,faces_in_a_frame)
+      
     if TEST_CAPTURE:
       # Display the results
       for (top, right, bottom, left), name, ver, conf in zip(self.face_locations, self.face_names,verified, self.face_confidences):
@@ -262,4 +304,9 @@ class FacesLib:
   def GetCurentFaces(self):
     """ Returns list of tuples (name_face_id, confidence, face_to_image_ratio)"""
     with self.CameraThreadLock:
-      return [*zip(self.curent_names  , self.curent_confidences , self.curent_face_to_image_ratio)]
+      return self.fec_copy
+      #return [*zip(self.curent_names  , self.curent_confidences , self.curent_face_to_image_ratio)]
+    
+  def SetFilterDeltaTime(self, time:float):
+    with self.CameraThreadLock:
+      self.filter_delta_time = time

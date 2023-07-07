@@ -19,7 +19,6 @@ sudo apt-get install portaudio19-dev
 python3 -m pip install -r requirements.txt
 ```
 
-
 #leave virtual env
 ```bash
 deactivate

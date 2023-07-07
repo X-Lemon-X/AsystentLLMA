@@ -33,6 +33,10 @@ index = microphone.get_device_count() - 1
 engineTextToSpeach = pyttsx3.init()
 engineTextToSpeach.setProperty('voice', 'english')
 
+modelSystem_Prompt = "### System:\nYou are an assistant that gives short answers\n"
+modelInstruction_Prompt = "### Instruction:\n%1\n"
+modelResponse_Prompt = "### Response:\n\n"
+
 modelLLM = GPT4All("nous-hermes-13b.ggmlv3.q4_0.bin",n_threads=6) 
 basicBotPromptSetings = "" #"Be precise, give short answears, look for cammond words line minus, plus, equal, etc. translate them as you would do in math."
 
@@ -83,22 +87,20 @@ def LookForBasicComands(speach:str):
 def GetResponseFormLLM(llma:GPT4All,text:str):
   if text is None or text == "":
     return None
-  return llma.generate(prompt=text,max_tokens=4096,temp=0.8,top_p=0.9,top_k=40,n_batch=512)
-
-def mainLoop():
-  with sr.Microphone(device_index=index) as source2, modelLLM.chat_session() as session:   
-    audio = listeToAudio(source2)
-    speach, lang = translateAudio(audio)
-    if LookForBasicComands(speach) is False :
-      llmResponse = GetResponseFormLLM(llma=session,text=speach)
-      print("Asistant: ",llmResponse)
-      if lang not in Language:
-        lang = "en"
-      speak(text_to_speak=llmResponse, language=Language[lang])
+  return llma.generate(prompt=modelSystem_Prompt + modelInstruction_Prompt + modelResponse_Prompt + text,max_tokens=4096,temp=0.8,top_p=0.9,top_k=40,n_batch=512)
 
 while ExitApp is False:   
   try:
-    mainLoop()
+    with sr.Microphone(device_index=index) as source2, modelLLM.chat_session() as session: 
+      audio = listeToAudio(source2)
+      speach, lang = translateAudio(audio)
+      if LookForBasicComands(speach) is False :
+        llmResponse = GetResponseFormLLM(llma=session,text=speach)
+        print("Asistant: ",llmResponse)
+        if lang not in Language:
+          lang = "en"
+        speak(text_to_speak=llmResponse, language=Language[lang])
+
   except sr.RequestError as e:
       print("Could not request results; {0}".format(e))
   except sr.UnknownValueError:

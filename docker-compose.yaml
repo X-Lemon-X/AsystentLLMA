@@ -1,0 +1,8 @@
+
+version: '3'
+
+services:
+  gpt:
+    image: gpt_t
+    container_name: name_gpt
+    restart: always
