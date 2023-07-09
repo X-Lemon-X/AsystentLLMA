@@ -35,9 +35,8 @@ def CommandHendler(self,key:str,arg:str=None):
   return #retun answear of the command that well be pushed to LLM model
 ```
 
-the Asistant class that handles the voice assistant requires onlu one line of code to add app wraper ac functioning module to the assistant it cann be even added at run time co it is possible to make an app wraper that can install other app wrapers
+the Asistant class requires onlu one line of code to add app wraper as functioning module it can be even added at run time co it is possible to make an app wraper that can install other app wrapers
 ```python
-
 swc = AppWraperClass()
 
 assis = Assistant()
