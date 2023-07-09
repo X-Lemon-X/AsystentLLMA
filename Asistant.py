@@ -22,8 +22,8 @@ class Assistant:
     self.USE_PYTTSX_VOICE = True
     self.modelSystem_Prompt = """
 ### System:
-You are an assistant that answers questions and can run commands that might require argument if not None is in arguemnt,
-do not mention more than one command, in answers wirte only the command name and argument if it is required.
+You are an assistant that answers questions and can run commands if not do not display any arguments,
+do not mention more than one command and only command name, in answers wirte only the command name if argument is explicitly specified by a user add it.
 You can run this specific commands:\n"""
     
     self.modelInstruction_Prompt = "### Instruction:\n"
@@ -62,6 +62,7 @@ You can run this specific commands:\n"""
     self.add_commands(self.appCommands, self.handle_command)
 
   def __del__(self):
+    print(Fore.RESET,"")
     for class_reference in self.classes:
       class_reference.__del__()
 

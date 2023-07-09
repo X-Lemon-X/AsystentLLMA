@@ -30,11 +30,11 @@ class CommandLine:
   
   def G31(self,args) -> str:
     if args != None or args != "":
-      os.system("firefox " + args)
+      os.system("firefox " + args + " &")
       return "opened firefox" + args
-    os.system("firefox")
+    os.system("firefox &")
     return "opened firefox"  
 
   def G32(self,args) -> str:
-    os.system("discord")
+    os.system("discord &")
     return "opened dicord"
